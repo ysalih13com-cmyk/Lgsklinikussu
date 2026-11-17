@@ -1,0 +1,7 @@
+{
+  "name": "LGS Klinik Üssü",
+  "description": "Prof. Dr. Yusuf Salih - LGS 2027 Klinik Üssü ve Dijital Hoca Odası hazırlık platformu",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
