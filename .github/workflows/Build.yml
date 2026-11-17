@@ -1,0 +1,46 @@
+name: APK Olustur
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Zip ac
+        run: |
+          test -f LgsKlinik.zip || { echo "HATA: LgsKlinik.zip depoda yok"; ls -la; exit 1; }
+          unzip -q LgsKlinik.zip -d proje
+          D=$(dirname "$(find proje -name settings.gradle.kts | head -1)")
+          echo "Proje klasoru: $D"
+          echo "PROJE_DIR=$D" >> $GITHUB_ENV
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 9.3.1
+      - name: Android lisanslarini kabul et
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+      - name: APK derle (indirme sorunu olursa tekrar dener)
+        run: |
+          set -o pipefail
+          cd "$PROJE_DIR"
+          for i in 1 2 3 4; do
+            echo "=== Deneme $i ==="
+            if gradle assembleDebug --no-daemon 2>&1 | tee build.log; then
+              exit 0
+            fi
+            if grep -qE "429|Too Many Requests" build.log; then
+              echo "Sunucu cok istek diyor (429). 90 sn bekleniyor..."
+              sleep 90
+            else
+              echo "Bu indirme sorunu degil, kodda hata var. Tekrar denenmeyecek."
+              exit 1
+            fi
+          done
+          exit 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LgsKlinik-APK
+          path: ${{ env.PROJE_DIR }}/app/build/outputs/apk/debug/*.apk
